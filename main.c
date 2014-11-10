@@ -4,7 +4,13 @@
 int main() {
     random_init();
     keypair_t k;
-    k = keypair_init_r(53);
-    keypair_simulate_break(k);
+    int i, j;
+    for (i = 8; i <= 256; i++) {
+        for (j = 0; j < 10; j++) {
+            k = keypair_init_r(i);
+            keypair_simulate_break(k);
+            keypair_free(k);
+        }
+    }
     return 0;
 }

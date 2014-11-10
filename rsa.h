@@ -2,11 +2,13 @@
 #define RSA_H
 
 #include <gmp.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
 
 typedef struct keypair* keypair_t;
+typedef char byte;
 
 struct keypair {
     mpz_t n;
@@ -24,7 +26,11 @@ int modInv(mpz_t, const mpz_t, const mpz_t);
 void totient(mpz_t, const mpz_t, const mpz_t);
 bool isPrime(const mpz_t, int);
 void keypair_gen(int size, keypair_t k);
-keypair_t keypair_init(int size);
+keypair_t keypair_init_r(int size);
+keypair_t keypair_init_p(const mpz_t n, const mpz_t e, const mpz_t d);
 void keypair_info(keypair_t k);
+void keypair_simulate_break(keypair_t k);
+void keypair_file_encrypt(keypair_t k, FILE* in_file, FILE* out_file);
+void keypair_file_decrypt(keypair_t k, FILE* f);
 
 #endif

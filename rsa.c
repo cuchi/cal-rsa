@@ -206,6 +206,7 @@ void keypair_info(keypair_t k) {
 
 void keypair_simulate_break(keypair_t k) {
     struct timeval t0, t1;
+    double time;
     mpz_t p, q, mod, phi, d;
     mpz_inits(p, q, mod, phi, d, NULL);
     gettimeofday(&t0, 0);
@@ -221,14 +222,13 @@ void keypair_simulate_break(keypair_t k) {
             modInv(d, k->e, phi);
             if (mpz_cmp(k->d, d) == 0) {
                 gettimeofday(&t1, 0);
-                gmp_printf("Broken! Time = %ld.%06lds\n",
-                        t1.tv_sec - t0.tv_sec,
-                        t1.tv_usec - t0.tv_usec);
+				time = (t1.tv_sec - t0.tv_sec) + 0.000001 * (t1.tv_usec - t0.tv_usec);
+				gmp_printf("%3d %lf\n", k->size, time);
                 mpz_clears(p, q, mod, phi, d, NULL);
                 return;
             }
         }
-        mpz_sub_ui(p, p, 1);
+        mpz_sub_ui(p, p, 2);
     }
 }
 

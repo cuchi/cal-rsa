@@ -31,6 +31,6 @@ keypair_t keypair_init_p(const mpz_t n, const mpz_t e, const mpz_t d);
 void keypair_info(keypair_t k);
 void keypair_simulate_break(keypair_t k);
 void keypair_file_encrypt(keypair_t k, FILE* in_file, FILE* out_file);
-void keypair_file_decrypt(keypair_t k, FILE* f);
+void keypair_file_decrypt(keypair_t k, FILE* in_file, FILE* out_file);
 
 #endif

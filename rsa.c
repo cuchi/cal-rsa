@@ -163,8 +163,8 @@ void keypair_gen(int size, keypair_t k) {
         totient(phi, p, q);
         mpz_sub_ui(phi_aux, phi, 1);
         do {
-            mpz_set_si(k->e, 65536); // ... or a random from 0 to (phi - 2)
-            //mpz_urandomm(k->e, RS, phi);
+            //mpz_set_si(k->e, 65536); // ... or a random from 0 to (phi - 2)
+            mpz_urandomm(k->e, RS, phi);
             mpz_add_ui(k->e, k->e, 1);
             // (e, phi) must be coprimes (gcd == 1):
             euclides(gcd, k->e, phi);
@@ -222,8 +222,8 @@ void keypair_simulate_break(keypair_t k) {
             modInv(d, k->e, phi);
             if (mpz_cmp(k->d, d) == 0) {
                 gettimeofday(&t1, 0);
-				time = (t1.tv_sec - t0.tv_sec) + 0.000001 * (t1.tv_usec - t0.tv_usec);
-				gmp_printf("%3d %lf\n", k->size, time);
+                time = (t1.tv_sec - t0.tv_sec) + 0.000001 * (t1.tv_usec - t0.tv_usec);
+                gmp_printf("%3d %lf\n", k->size, time);
                 mpz_clears(p, q, mod, phi, d, NULL);
                 return;
             }
@@ -239,7 +239,7 @@ void keypair_file_encrypt(keypair_t k, FILE* in_file, FILE* out_file) {
     mpz_t in_data, out_data, n_aux, p;
     int data_size;
     int word_size;
-    int i, j;
+    int i, j, ni;
 
     fseek(in_file, 0, SEEK_END);
     file_size = ftell(in_file);
@@ -274,14 +274,74 @@ void keypair_file_encrypt(keypair_t k, FILE* in_file, FILE* out_file) {
     data_size += 8;
     data_size -= data_size % 8;
     out_stream = (byte*) malloc(data_size/8);
-    for (i = (data_size / 8) - 1; i >= 0; i--) {
+    ni = (data_size / 8) - 1;
+    for (i = ni; i >= 0; i--) {
         mpz_set_si(n_aux, 0);
         for (j = 7; j >= 0; j--) {
             if (mpz_tstbit(out_data, i * 8 + j)) {
                 mpz_setbit(n_aux, j);
             }
         }
-        out_stream[i] = (byte) mpz_get_ui(n_aux);
+        out_stream[ni - i] = (byte) mpz_get_ui(n_aux);
+    }
+    mpz_clear(out_data);
+
+    fseek(out_file, 0, SEEK_SET);
+    fwrite(out_stream, 1, data_size / 8, out_file);
+    free(out_stream);
+    mpz_clears(n_aux, p, NULL);
+}
+
+void keypair_file_decrypt(keypair_t k, FILE* in_file, FILE* out_file) {
+    long file_size;
+    byte* in_stream;
+    byte* out_stream;
+    mpz_t in_data, out_data, n_aux, p;
+    int data_size;
+    int word_size;
+    int i, j, ni;
+
+    fseek(in_file, 0, SEEK_END);
+    file_size = ftell(in_file);
+    fseek(in_file, 0, SEEK_SET);
+    in_stream = (byte*) malloc(file_size);
+    fread(in_stream, 1, file_size, in_file);
+
+    mpz_inits(in_data, out_data, NULL);
+    mpz_import(in_data, file_size, 1, 1, 0, 0, in_stream);
+    free(in_stream);
+    data_size = mpz_sizeinbase(in_data, 2);
+    word_size = k->size;
+    data_size += word_size;
+    data_size -= data_size % word_size;
+    mpz_inits(n_aux, p, NULL);
+    for (i = (data_size / word_size) - 1; i >= 0; i--) {
+        mpz_set_si(n_aux, 0);
+        for (j = word_size - 1; j >= 0; j--) {
+            if (mpz_tstbit(in_data, i * word_size + j)) {
+                mpz_setbit(n_aux, j);
+            }
+        }
+        mpz_powm_sec(n_aux, n_aux, k->d, k->n);
+        mpz_ui_pow_ui(p, 2, i * (k->size - 1));
+        mpz_mul(n_aux, n_aux, p);
+        mpz_add(out_data, out_data, n_aux);
+    }
+    mpz_clear(in_data);
+
+    data_size = mpz_sizeinbase(out_data, 2);
+    data_size += 8;
+    data_size -= data_size % 8;
+    out_stream = (byte*) malloc(data_size/8);
+    ni = (data_size / 8) - 1;
+    for (i = ni; i >= 0; i--) {
+        mpz_set_si(n_aux, 0);
+        for (j = 7; j >= 0; j--) {
+            if (mpz_tstbit(out_data, i * 8 + j)) {
+                mpz_setbit(n_aux, j);
+            }
+        }
+        out_stream[ni - i] = (byte) mpz_get_ui(n_aux);
     }
     mpz_clear(out_data);
 

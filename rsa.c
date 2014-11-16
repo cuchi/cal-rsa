@@ -153,8 +153,8 @@ void keypair_gen(int size, keypair_t k) {
         phi_n(phi, p, q);
         mpz_sub_ui(phi_aux, phi, 1);
         do {
-            //mpz_set_si(k->e, 65536); // ... or a random from 0 to (phi - 2)
-            mpz_urandomm(k->e, RS, phi);
+            mpz_set_si(k->e, 65536); // ... or a random from 0 to (phi - 2)
+            //mpz_urandomm(k->e, RS, phi);
             mpz_add_ui(k->e, k->e, 1);
             // (e, phi) must be coprimes (gcd == 1):
             euclides(gcd, k->e, phi);

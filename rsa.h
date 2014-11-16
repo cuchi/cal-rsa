@@ -17,14 +17,14 @@ struct keypair {
     int size;
 };
 
-gmp_randstate_t RS;
+static gmp_randstate_t RS;
 
 void random_init();
 void euclides(mpz_t, const mpz_t, const mpz_t);
-void euclidesExt(const mpz_t, const mpz_t, mpz_t, mpz_t, mpz_t);
-int modInv(mpz_t, const mpz_t, const mpz_t);
-void totient(mpz_t, const mpz_t, const mpz_t);
-bool isPrime(const mpz_t, int);
+void euclides_ext(const mpz_t, const mpz_t, mpz_t, mpz_t, mpz_t);
+int mod_inv(mpz_t, const mpz_t, const mpz_t);
+void phi_n(mpz_t, const mpz_t, const mpz_t);
+bool is_prime(const mpz_t, int);
 void keypair_gen(int size, keypair_t k);
 keypair_t keypair_init_r(int size);
 keypair_t keypair_init_p(const mpz_t n, const mpz_t e, const mpz_t d);

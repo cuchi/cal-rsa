@@ -1,5 +1,7 @@
 #include "rsa.h"
 
+
+
 void random_init() {
     gmp_randinit_default(RS);
     gmp_randseed_ui(RS, time(NULL));
@@ -25,7 +27,7 @@ void euclides(mpz_t r, const mpz_t _a, const mpz_t _b) {
     mpz_clears(a, b, NULL);
 }
 
-void euclidesExt(const mpz_t _a, const mpz_t _b, mpz_t _gcd, mpz_t _x, mpz_t _y) {
+void euclides_ext(const mpz_t _a, const mpz_t _b, mpz_t _gcd, mpz_t _x, mpz_t _y) {
     mpz_t a, b, x, y, u, v, q, r, m, n;
     mpz_inits(a, b, x, y, u, v, q, r, m, n, NULL);
     mpz_set_si(y, 1);
@@ -52,11 +54,11 @@ void euclidesExt(const mpz_t _a, const mpz_t _b, mpz_t _gcd, mpz_t _x, mpz_t _y)
     mpz_clears(a, b, x, y, u, v, q, r, m, n, NULL);
 }
 
-int modInv(mpz_t mod_inv, const mpz_t a, const mpz_t m) {
+int mod_inv(mpz_t mod_inv, const mpz_t a, const mpz_t m) {
     int ret;
     mpz_t gcd, x, y;
     mpz_inits(gcd, x, y, NULL);
-    euclidesExt(a, m, gcd, x, y);
+    euclides_ext(a, m, gcd, x, y);
     if (mpz_cmp_si(gcd, 1) != 0) {
         ret = 0;
     } else {
@@ -67,7 +69,7 @@ int modInv(mpz_t mod_inv, const mpz_t a, const mpz_t m) {
     return ret;
 }
 
-void totient(mpz_t t, const mpz_t _p, const mpz_t _q) {
+void phi_n(mpz_t t, const mpz_t _p, const mpz_t _q) {
     mpz_t p, q;
     mpz_inits(p, q, NULL);
     mpz_set(p, _p);
@@ -78,18 +80,7 @@ void totient(mpz_t t, const mpz_t _p, const mpz_t _q) {
     mpz_clears(p, q, NULL);
 }
 
-/*
-void keypair(const mpz_t p, const mpz_t q, const mpz_t e, mpz_t n, mpz_t private) {
-    mpz_t tot;
-    mpz_init(tot);
-    mpz_mul(n, p, q);
-    totient(p, q, tot);
-    modInv(e, tot, private);
-    mpz_clear(tot);
-}
-*/
-
-bool isPrime(const mpz_t n, int it) {
+bool is_prime(const mpz_t n, int it) {
     mpz_t s, s_mod, rnd, temp_n, temp_s, mod;
     // Se n < 2
     int cmp_2 = mpz_cmp_si(n, 2);
@@ -141,7 +132,6 @@ bool isPrime(const mpz_t n, int it) {
     return true;
 }
 
-//void keypair_gen(const int size, mpz_t n, mpz_t e, mpz_t d) {
 void keypair_gen(int size, keypair_t k) {
     mpz_t p, q, phi, phi_aux, gcd, p1, p2, min_q, max_q;
     mpz_inits(p, q, phi, phi_aux, gcd, p1, p2, min_q, max_q, NULL);
@@ -150,7 +140,7 @@ void keypair_gen(int size, keypair_t k) {
     do {
         do {
             mpz_urandomb(p, RS, size/2);
-        } while (!isPrime(p, 64) || mpz_cmp_si(p, 2) == 0);
+        } while (!is_prime(p, 64) || mpz_cmp_si(p, 2) == 0);
         mpz_fdiv_q(min_q, p1, p);
         mpz_fdiv_q(max_q, p2, p);
         mpz_sub(max_q, max_q, min_q);
@@ -158,9 +148,9 @@ void keypair_gen(int size, keypair_t k) {
             mpz_urandomm(q, RS, max_q);
             mpz_add(q, q, min_q);
             mpz_add_ui(q, q, 1);
-        } while (!isPrime(q, 64));
+        } while (!is_prime(q, 64));
         mpz_mul(k->n, p, q);
-        totient(phi, p, q);
+        phi_n(phi, p, q);
         mpz_sub_ui(phi_aux, phi, 1);
         do {
             //mpz_set_si(k->e, 65536); // ... or a random from 0 to (phi - 2)
@@ -169,7 +159,7 @@ void keypair_gen(int size, keypair_t k) {
             // (e, phi) must be coprimes (gcd == 1):
             euclides(gcd, k->e, phi);
         } while (mpz_cmp_si(gcd, 1) != 0);
-        modInv(k->d, k->e, phi);
+        mod_inv(k->d, k->e, phi);
     } while (mpz_cmp(k->e, k->d) == 0);
     mpz_clears(p, q, phi, phi_aux, gcd, p1, p2, min_q, max_q, NULL);
 }
@@ -198,10 +188,16 @@ void keypair_free(keypair_t k) {
 }
 
 void keypair_info(keypair_t k) {
-    gmp_printf("Size (in bits): %d\n", k->size);
+    gmp_printf("bits): %d\n", k->size);
     gmp_printf("Modulus: %Zd\n", k->n);
     gmp_printf("Public expoent: %Zd\n", k->e);
     gmp_printf("Private expoent: %Zd\n", k->d);
+}
+
+void keypair_raw_info(keypair_t k) {
+    gmp_printf("%Zd\n", k->n);
+    gmp_printf("%Zd\n", k->e);
+    gmp_printf("%Zd\n", k->d);
 }
 
 void keypair_simulate_break(keypair_t k) {
@@ -218,8 +214,8 @@ void keypair_simulate_break(keypair_t k) {
         mpz_mod(mod, k->n, p);
         if (mpz_cmp_si(mod, 0) == 0) {
             mpz_divexact(q, k->n, p);
-            totient(phi, p, q);
-            modInv(d, k->e, phi);
+            phi_n(phi, p, q);
+            mod_inv(d, k->e, phi);
             if (mpz_cmp(k->d, d) == 0) {
                 gettimeofday(&t1, 0);
                 time = (t1.tv_sec - t0.tv_sec) + 0.000001 * (t1.tv_usec - t0.tv_usec);

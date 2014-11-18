@@ -67,6 +67,7 @@ int main(int argc, char* argv[]) {
             fclose(output_file);
             mpz_clears(kn, ke, kd, NULL);
             keypair_free(kp);
+            return 0;
         }
     } else {
         fprintf(stderr, "\n### Usage:\n");
